@@ -3,4 +3,3 @@ keras
 tensorflow
 flask
 opencv-python
-imghdr
