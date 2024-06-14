@@ -3,3 +3,4 @@ keras
 tensorflow
 flask
 opencv-python
+uvicorn
