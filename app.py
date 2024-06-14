@@ -19,7 +19,7 @@ from tensorflow.keras.models import load_model
 
 
 
-model = load_model('/kaggle/input/my-model/my_model (1).h5')
+model = load_model('my_model.h5')
 
 app = Flask(__name__)
 
@@ -39,7 +39,7 @@ with open('plantnet300K_species_id_2_name.json', 'r') as f:
 class_indices = {str(i): label for i, (original_idx, label) in enumerate(original_class_indices.items())}
 
 # Save the new mapping to a new JSON file (optional)
-with open('/kaggle/working/new_class_indices.json', 'w') as f:
+with open('new_class_indices.json', 'w') as f:
     json.dump(class_indices, f)
 
     
