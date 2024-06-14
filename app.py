@@ -80,5 +80,3 @@ def predict():
     results = process_images(model, image_paths, size, preprocess_input, top_k)
     return jsonify(results)
 
-if __name__ == '__main__':
-    app.run(debug=True)
