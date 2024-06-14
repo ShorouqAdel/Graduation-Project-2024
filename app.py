@@ -32,7 +32,7 @@ if gpus:
         print(e)
 
 # Load the original class indices from the JSON file
-with open('/kaggle/input/plantnet300k-idx-to-classes/plantnet300K_species_id_2_name.json', 'r') as f:
+with open('plantnet300K_species_id_2_name.json', 'r') as f:
     original_class_indices = json.load(f)
 
 # Create a new mapping from 0 to len(original_class_indices) - 1
