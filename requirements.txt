@@ -1,6 +1,6 @@
 numpy
 keras
-tensorflow
+tensorflow==2.15.0
 flask
 opencv-python-headless
 fastapi
