@@ -1,6 +1,6 @@
 import os
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import List
 import tensorflow as tf
@@ -40,12 +40,12 @@ with open('new_class_indices.json', 'w') as f:
 
 # Define request and response models
 class PredictionRequest(BaseModel):
-    image_paths: List[str]
+    files: List[UploadFile]  # Change from image_paths to files
     top_k: int = 5
 
 class PredictionResponse(BaseModel):
     predictions: List[List[dict]]
-
+    
 def custom_decode_predictions(preds, class_indices, top=5):
     results = []
     for pred in preds:
@@ -54,17 +54,15 @@ def custom_decode_predictions(preds, class_indices, top=5):
         results.append(result)
     return results
 
-def process_images(model, image_paths, size, preprocess_input, top_k=5):
+def process_images(model, files, size, preprocess_input, top_k=5):
     all_preds = []
-    for image_path in image_paths:
-        # Read the image using TensorFlow
-        tf_image = tf.io.read_file(image_path)
-
-        # Decode the above `tf_image` from a Bytes string to a numeric Tensor
-        decoded_image = tf.image.decode_image(tf_image)
+    for file in files:
+        # Read the image file using TensorFlow
+        content = await file.read()
+        tf_image = tf.image.decode_image(content)
 
         # Resize the image to the spatial size required by the model
-        image_resized = tf.image.resize(decoded_image, size)
+        image_resized = tf.image.resize(tf_image, size)
 
         # Add a batch dimension to the first axis (required)
         image_batch = tf.expand_dims(image_resized, axis=0)
@@ -82,10 +80,10 @@ def process_images(model, image_paths, size, preprocess_input, top_k=5):
     return all_preds
 
 @app.post("/predict", response_model=PredictionResponse)
-async def predict(request: PredictionRequest):
+async def predict(request: PredictionRequest = Form(...)):
     try:
         size = (256, 256)
-        predictions = process_images(model, request.image_paths, size, preprocess_input, request.top_k)
+        predictions = await process_images(model, request.files, size, preprocess_input, request.top_k)
         return PredictionResponse(predictions=predictions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
