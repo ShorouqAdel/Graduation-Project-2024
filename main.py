@@ -24,7 +24,7 @@ class CustomDepthwiseConv2D(DepthwiseConv2D):
             kwargs.pop('groups')
         super(CustomDepthwiseConv2D, self).__init__(**kwargs)
 
-custom_objects = {'DepthwiseConv2D': DepthwiseConv2D}
+custom_objects = {'DepthwiseConv2D': CustomDepthwiseConv2D}
 model = load_model(model_path, custom_objects=custom_objects)
 
 # Load the original class indices from the JSON file
