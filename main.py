@@ -75,8 +75,8 @@ def process_image(file, model, size, preprocess_input, class_indices, top_k=5):
     decoded_preds = custom_decode_predictions(preds, class_indices, top=top_k)
     
     return decoded_preds
-
-app.post("/predict", response_model=PredictionResponse)
+    
+@app.post("/predict", response_model=PredictionResponse)
 async def predict(file: UploadFile = File(...), request: PredictionRequest = None):
     try:
         size = (256, 256)
