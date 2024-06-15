@@ -6,6 +6,8 @@ from typing import List
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
+from tensorflow.keras.layers import DepthwiseConv2D
+
 
 # Initialize the FastAPI app
 app = FastAPI()
@@ -22,8 +24,9 @@ if gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
     except RuntimeError as e:
         print(e)
-
-model = load_model(model_path)
+        
+custom_objects = {'DepthwiseConv2D': DepthwiseConv2D}
+model = load_model(model_path, custom_objects=custom_objects)
 
 # Load the original class indices from the JSON file
 with open(class_indices_path, 'r') as f:
