@@ -16,15 +16,6 @@ app = FastAPI()
 model_path = 'my_model.h5'
 class_indices_path = 'plantnet300K_species_id_2_name.json'
 
-# Ensure GPU memory growth is enabled
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        print(e)
-        
 custom_objects = {'DepthwiseConv2D': DepthwiseConv2D}
 model = load_model(model_path, custom_objects=custom_objects)
 
