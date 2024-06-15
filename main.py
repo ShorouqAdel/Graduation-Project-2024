@@ -8,7 +8,7 @@ import tensorrt
 from tensorflow.keras.models import load_model
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 from tensorflow.keras.layers import DepthwiseConv2D
-
+import tensorflow.keras.backend as K
 
 # Initialize the FastAPI app
 app = FastAPI()
@@ -16,6 +16,13 @@ app = FastAPI()
 # Load the model and class indices
 model_path = 'my_model.h5'
 class_indices_path = 'plantnet300K_species_id_2_name.json'
+
+
+class CustomDepthwiseConv2D(DepthwiseConv2D):
+    def __init__(self, **kwargs):
+        if 'groups' in kwargs:
+            kwargs.pop('groups')
+        super(CustomDepthwiseConv2D, self).__init__(**kwargs)
 
 custom_objects = {'DepthwiseConv2D': DepthwiseConv2D}
 model = load_model(model_path, custom_objects=custom_objects)
