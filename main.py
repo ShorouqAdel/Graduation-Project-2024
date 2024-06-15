@@ -1,10 +1,13 @@
 import os
 import tensorflow as tf
 from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.responses import JSONResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import List
+import numpy as np
 import json
-import uvicorn
+from io import BytesIO
+from PIL import Image
 
 app = FastAPI()
 
@@ -48,20 +51,20 @@ def custom_decode_predictions(preds, class_indices, top=5):
         results.append(result)
     return results
 
-async def process_images(model, image_files, size, preprocess_input, top_k=2):
+def process_images(model, images, size, preprocess_input, top_k=2):
     results = []
-    for image_file in image_files:
+    for idx, image in enumerate(images):
         try:
-            contents = await image_file.read()
-            tf_image = tf.image.decode_image(contents)
-            image_resized = tf.image.resize(tf_image, size)
-            image_batch = tf.expand_dims(image_resized, axis=0)
+            image = Image.open(BytesIO(image))
+            image = image.resize(size)
+            image_array = tf.keras.preprocessing.image.img_to_array(image)
+            image_batch = np.expand_dims(image_array, axis=0)
             image_batch = preprocess_input(image_batch)
             preds = model.predict(image_batch)
             decoded_preds = custom_decode_predictions(preds, class_indices, top=top_k)
             results.append(decoded_preds)
         except Exception as e:
-            results.append(f"Error processing image {image_file.filename}: {e}")
+            results.append(f"Error processing image {idx}: {e}")
     return results
 
 @app.post('/predict', response_model=list)
@@ -69,12 +72,24 @@ async def predict(files: List[UploadFile] = File(...), top_k: int = 5):
     if model is None:
         raise HTTPException(status_code=500, detail="Model could not be loaded")
 
-    if not files:
-        raise HTTPException(status_code=400, detail="No image files provided")
-    
+    images = [await file.read() for file in files]
     size = (256, 256)
-    results = await process_images(model, files, size, preprocess_input, top_k)
+    results = process_images(model, images, size, preprocess_input, top_k)
     return results
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return """
+    <html>
+        <head>
+            <title>FastAPI TensorFlow Service</title>
+        </head>
+        <body>
+            <h1>Welcome to the FastAPI TensorFlow Service</h1>
+            <p>Use the /predict endpoint to make predictions.</p>
+        </body>
+    </html>
+    """
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))  # Use PORT environment variable or default to 8000
