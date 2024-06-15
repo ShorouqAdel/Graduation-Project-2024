@@ -3,4 +3,5 @@ keras
 tensorflow
 flask
 opencv-python
-uvicorn
+fastapi
+uvicorn[standard]
