@@ -54,7 +54,7 @@ def custom_decode_predictions(preds, class_indices, top=5):
         results.append(result)
     return results
 
-def process_images(model, files, size, preprocess_input, top_k=5):
+async def process_images(model, files, size, preprocess_input, top_k=5):
     all_preds = []
     for file in files:
         # Read the image file using TensorFlow
@@ -78,6 +78,7 @@ def process_images(model, files, size, preprocess_input, top_k=5):
         all_preds.append(decoded_preds)
 
     return all_preds
+
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest = Form(...)):
