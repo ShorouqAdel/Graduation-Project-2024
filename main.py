@@ -1,6 +1,7 @@
 import os
 import json
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+import uuid
 from pydantic import BaseModel
 from typing import List
 import tensorflow as tf
@@ -40,7 +41,6 @@ with open('new_class_indices.json', 'w') as f:
 
 # Define request and response models
 class PredictionRequest(BaseModel):
-    files: List[UploadFile]  # Change from image_paths to files
     top_k: int = 5
 
 class PredictionResponse(BaseModel):
@@ -54,37 +54,33 @@ def custom_decode_predictions(preds, class_indices, top=5):
         results.append(result)
     return results
 
-async def process_images(model, files, size, preprocess_input, top_k=5):
-    all_preds = []
-    for file in files:
-        # Read the image file using TensorFlow
-        content = await file.read()
-        tf_image = tf.image.decode_image(content)
+def process_image(file, model, size, preprocess_input, class_indices, top_k=5):
+    # Read the image file using TensorFlow
+    content = file.file.read()
+    tf_image = tf.image.decode_image(content)
 
-        # Resize the image to the spatial size required by the model
-        image_resized = tf.image.resize(tf_image, size)
+    # Resize the image to the spatial size required by the model
+    image_resized = tf.image.resize(tf_image, size)
 
-        # Add a batch dimension to the first axis (required)
-        image_batch = tf.expand_dims(image_resized, axis=0)
+    # Add a batch dimension to the first axis (required)
+    image_batch = tf.expand_dims(image_resized, axis=0)
 
-        # Pre-process the input image
-        image_batch = preprocess_input(image_batch)
+    # Pre-process the input image
+    image_batch = preprocess_input(image_batch)
 
-        # Forward pass through the model to make predictions
-        preds = model.predict(image_batch)
+    # Forward pass through the model to make predictions
+    preds = model.predict(image_batch)
 
-        # Decode (and rank the top-k) predictions
-        decoded_preds = custom_decode_predictions(preds, class_indices, top=top_k)
-        all_preds.append(decoded_preds)
+    # Decode (and rank the top-k) predictions
+    decoded_preds = custom_decode_predictions(preds, class_indices, top=top_k)
+    
+    return decoded_preds
 
-    return all_preds
-
-
-@app.post("/predict", response_model=PredictionResponse)
-async def predict(request: PredictionRequest = Form(...)):
+app.post("/predict", response_model=PredictionResponse)
+async def predict(file: UploadFile = File(...), request: PredictionRequest = None):
     try:
         size = (256, 256)
-        predictions = await process_images(model, request.files, size, preprocess_input, request.top_k)
+        predictions = process_image(file, model, size, preprocess_input, class_indices, request.top_k)
         return PredictionResponse(predictions=predictions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
